@@ -9,6 +9,7 @@ Computer Assignment with Ames Housing data
 import numpy as np
 from sklearn import metrics, linear_model
 import matplotlib.pyplot as plt 
+import sklearn
 
 
 amesfile = "C:/Users/baumj/OneDrive/Documents/UW Courses/EE 511 -\
@@ -89,9 +90,9 @@ regr.fit(training[feat1].reshape(-1,1),training[feat2].reshape(-1,1))
 
 print('Regression Equation','y=',regr.coef_,'*x+',regr.intercept_)
 
-
+#Get line values
 x_liv_area = np.linspace(np.min(training[feat1]),np.max(training[feat1]))
-eqn_pred = regr.coef_*x_liv_area+regr.intercept_
+eqn_pred = regr.coef_*x_liv_area+regr.intercept_  # could change this to just predict(x)
 
 plt.scatter(feat1,feat2,data=training,label='Training Data')
 plt.plot(x_liv_area,eqn_pred.T,'r',label='Simple Regression')
@@ -99,9 +100,12 @@ plt.title('Simple Linear Regression')
 plt.xlabel(feat1)
 plt.ylabel(feat2)
 plt.legend()
-plt.show()
+#plt.show()
 
-
+valid_pred = regr.predict(validation[feat1].reshape(-1,1))
+valid_rmse = np.sqrt(metrics.mean_squared_error(validation[feat2].reshape(-1,1),\
+                                                 valid_pred))
+print('RMSE of Validation set:',valid_rmse)
 print("did it work?")
 
 
