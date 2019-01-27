@@ -9,12 +9,38 @@ Computer Assignment with Ames Housing data
 import numpy as np
 from sklearn import metrics, linear_model
 import matplotlib.pyplot as plt 
-import sklearn
+from sklearn.preprocessing import OneHotEncoder
+import pandas as pd
 
 
 amesfile = "C:/Users/baumj/OneDrive/Documents/UW Courses/EE 511 -\
  Intro to Statistical Learning/Python Coding Problems/HW2/AmesHousing.txt"
 #types = ()  
+numerical_variables = ['Lot_Area', 'Lot_Frontage', 'Year_Built',\
+'Mas_Vnr_Area', 'BsmtFin_SF_1', 'BsmtFin_SF_2',\
+'Bsmt_Unf_SF', 'Total_Bsmt_SF', '1st_Flr_SF',\
+'2nd_Flr_SF', 'Low_Qual_Fin_SF', 'Gr_Liv_Area',\
+'Garage_Area', 'Wood_Deck_SF', 'Open_Porch_SF',\
+'Enclosed_Porch', '3Ssn_Porch', 'Screen_Porch','Pool_Area']
+
+discrete_variables = ['MS_SubClass','MS_Zoning','Street',\
+                      'Alley','Lot_Shape','Land_Contour',\
+                      'Utilities','Lot_Config','Land_Slope',\
+                      'Neighborhood','Condition_1','Condition_2',\
+                      'Bldg_Type','House_Style','Overall_Qual',\
+                      'Overall_Cond','Roof_Style','Roof_Matl',\
+                      'Exterior_1st','Exterior_2nd','Mas_Vnr_Type',\
+                      'Exter_Qual','Exter_Cond','Foundation',\
+                      'Bsmt_Qual','Bsmt_Cond','Bsmt_Exposure',\
+                      'BsmtFin_Type_1','Heating','Heating_QC',\
+                      'Central_Air','Electrical','Bsmt_Full_Bath',\
+                      'Bsmt_Half_Bath','Full_Bath','Half_Bath',\
+                      'Bedroom_AbvGr','Kitchen_AbvGr','Kitchen_Qual',\
+                      'TotRms_AbvGrd','Functional','Fireplaces',\
+                      'Fireplace_Qu','Garage_Type','Garage_Cars',\
+                      'Garage_Qual','Garage_Cond','Paved_Drive',\
+                      'Pool_QC','Fence','Sale_Type','Sale_Condition']
+
 # numerical_variables = ['Lot_Area':0.0, 'Lot_Frontage':0.0, 'Year_Built':0.0,\
 # 'Mas_Vnr_Area':0.0, 'BsmtFin_SF_1':0.0, 'BsmtFin_SF_2':0.0,\
 # 'Bsmt_Unf_SF':0.0, 'Total_Bsmt_SF':0.0, '1st_Flr_SF':0.0,\
@@ -76,13 +102,14 @@ amesdata = np.genfromtxt(amesfile,dtype=None,delimiter='\t', names=True,\
 # with open(amesfile,'r') as f:
 #     amesdata = f.read()
 
+## Part 3 - split the data ##
 training = np.delete(amesdata,np.s_[2::5],0) # Remove Ord mod 5=3
 training = np.delete(training,np.s_[2::4],0) # Remove Ord mod5 = 4
 validation = amesdata[2::5]
 testdata = amesdata[3::5]
 
 
-## Part 3 - Simple Linear Regression ##
+## Part 4 - Simple Linear Regression ##
 feat1 = 'Gr_Liv_Area'
 feat2 = 'SalePrice'
 regr = linear_model.LinearRegression()
@@ -106,6 +133,55 @@ valid_pred = regr.predict(validation[feat1].reshape(-1,1))
 valid_rmse = np.sqrt(metrics.mean_squared_error(validation[feat2].reshape(-1,1),\
                                                  valid_pred))
 print('RMSE of Validation set:',valid_rmse)
+
+
+## Part 5 - Add more features ##
+
+# Transform categorical to one-hot encoding
+ames_enc = OneHotEncoder()
+ames_enc.fit(training['Alley'].reshape(-1,1))
+#make for loop to parse through categories and reconcat 
+hot_train = pd.DataFrame(training.copy())
+hot_valid = pd.DataFrame(validation.copy())
+
+
+#hot_train = pd.DataFrame(training[numerical_variables].copy())
+
+# test['Alley'] = pd.get_dummies(test['Alley'])
+# test = pd.concat([test,pd.get_dummies(test['Alley'],prefix='Alley')],axis=1)
+
+disc_hotnames= []
+#Separate categorical variables into one-hot vectors
+for i in discrete_variables:
+    df_train = pd.get_dummies(hot_valid[i],prefix=i)
+    disc_hotnames += df_train.columns.tolist()
+    hot_train=pd.concat([hot_train,df_train],axis=1).drop([i],axis=1)
+
+    df_valid=pd.get_dummies(hot_valid[i],prefix=i)
+    hot_valid=pd.concat([hot_valid,df_valid],axis=1).drop([i],axis=1)
+   
+    #hot_train=pd.concat([hot_train,pd.get_dummies(hot_train[i],prefix=i)],axis=1).drop([i],axis=1)
+    #hot_valid=pd.concat([hot_valid,pd.get_dummies(hot_valid[i],prefix=i)],axis=1).drop([i],axis=1)
+
+
+## Part 5 - Full Regression ##
+
+full_regr = linear_model.LinearRegression(normalize=True)  #check if normalize makes sense
+full_regr.fit(hot_train[numerical_variables+disc_hotnames],hot_train[feat2])
+
+# need to fix ValueError: Input contains NaN, infinity or a value too large for dtype('float64').
+# find columns with those things (fix input correctly?)
+    
+#     feat = training[i].copy().reshape(-1,1)
+#     temp2 = ames_enc.fit_transform(feat)
+#     ames_enc.fit(feat) 
+#     np.append(hot_train,ames_enc.transform(feat))
+    #hot_train.append(ames_enc.transform(feat))
+
+hotvalid_pred = full_regr.predict(hot_valid[numerical_variables+disc_hotnames]) 
+hotvalid_rmse = np.sqrt(metrics.mean_squared_error(hot_valid[feat2],hotvalid_pred))
+
+
 print("did it work?")
 
 
