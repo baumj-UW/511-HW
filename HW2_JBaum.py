@@ -10,6 +10,7 @@ import numpy as np
 from sklearn import metrics, linear_model
 import matplotlib.pyplot as plt 
 from sklearn.preprocessing import OneHotEncoder
+from sklearn import preprocessing
 import pandas as pd
 
 
@@ -167,22 +168,41 @@ for i in discrete_variables:
 ## Part 5 - Full Regression ##
 
 full_regr = linear_model.LinearRegression(normalize=True)  #check if normalize makes sense
-full_regr.fit(hot_train[numerical_variables+disc_hotnames],hot_train[feat2])
+full_regr.fit(hot_train[numerical_variables],hot_train[feat2])
 
 # need to fix ValueError: Input contains NaN, infinity or a value too large for dtype('float64').
-# find columns with those things (fix input correctly?)
+# find columns with those things (fix input correctly?) 
     
-#     feat = training[i].copy().reshape(-1,1)
-#     temp2 = ames_enc.fit_transform(feat)
-#     ames_enc.fit(feat) 
-#     np.append(hot_train,ames_enc.transform(feat))
-    #hot_train.append(ames_enc.transform(feat))
 
-hotvalid_pred = full_regr.predict(hot_valid[numerical_variables+disc_hotnames]) 
+hotvalid_pred = full_regr.predict(hot_valid[numerical_variables]) 
 hotvalid_rmse = np.sqrt(metrics.mean_squared_error(hot_valid[feat2],hotvalid_pred))
 
 
-print("did it work?")
+
+## Part 6 - L1 Regularization (Lasso) ##
+#Normalize features
+#hot_train_scale = preprocessing.scale(hot_train)
+
+l1_regr = linear_model.Lasso(alpha=250,normalize=True)
+l1_regr.fit(hot_train[numerical_variables],hot_train[feat2]) # this should include all the features
+# 
+# l1valid_pred = l1_regr.predict(hot_valid[numerical_variables])
+# l1valid_rmse = np.sqrt(metrics.mean_squared_error(hot_valid[feat2],hotvalid_pred))
+
+l1valid_rmse = np.zeros(9)
+i=0
+for alpha in range(50,500,50):
+    l1_regr = linear_model.Lasso(alpha,normalize=True)
+    l1_regr.fit(hot_train[numerical_variables],hot_train[feat2])
+    l1valid_pred = l1_regr.predict(hot_valid[numerical_variables])
+    l1valid_rmse[i] = np.sqrt(metrics.mean_squared_error(hot_valid[feat2],hotvalid_pred))
+    i +=1
+
+plt.plot(range(50,500,50),l1valid_rmse)
+plt.show()
+   
+
+
 
 
 
